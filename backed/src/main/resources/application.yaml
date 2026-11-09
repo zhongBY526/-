@@ -1,0 +1,27 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: backed
+  mvc:
+    async:
+      request-timeout: 60s
+langchain4j:
+  open-ai:
+    streaming-chat-model:
+      api-key: ${DEEPSEEK_API_KEY}
+      base-url: https://api.deepseek.com
+      model-name: deepseek-flash
+      timeout: 60s
+    chat-model:
+      api-key: ${DEEPSEEK_API_KEY}
+      base-url: https://api.deepseek.com
+      model-name: deepseek-flash
+      timeout: 60s
+  ollama:
+    embedding-model:
+      model-name: bge-m3
+      base-url: http://localhost:11434
+      timeout: 60s
+
+
