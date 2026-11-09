@@ -1,4 +1,4 @@
-# W2 流式对话 Lab
+#  流式对话 Lab
 
 Vue3 + Spring Boot 3 + LangChain4j + DeepSeek，包含流式对话和公文要素抽取。
 
