@@ -8,6 +8,6 @@ import static dev.langchain4j.service.spring.AiServiceWiringMode.EXPLICIT;
 @AiService(wiringMode = EXPLICIT, streamingChatModel = "openAiStreamingChatModel")
 
 public interface DeepSeekSteamAssaistent {
-    @SystemMessage(fromResource ="chat-system.md" )
-    TokenStream chat(@V("style") String style, @UserMessage String message);
+    @SystemMessage(fromResource ="messagePrompt.md" )
+    TokenStream chat( @V("style")String style, @UserMessage String message);
 }
