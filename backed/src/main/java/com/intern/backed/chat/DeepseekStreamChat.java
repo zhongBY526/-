@@ -77,17 +77,14 @@ public class DeepseekStreamChat {
                     log.info("SSE meta send stopped: {}", e.toString());
                     return emitter;
                 }
-
                 // 3. 开始调用模型
                 deepSeekSteamAssaistent.chat(request.style(), request.message())
                         .onPartialResponse(delta -> {
                             if (finished.get()) {
                                 return;
                             }
-
                             firstTokenMs.compareAndSet(-1,
                                     (System.nanoTime() - startedAt) / 1_000_000);
-
                             try {
                                 emitter.send(SseEmitter.event()
                                         .name("token")
@@ -101,14 +98,12 @@ public class DeepseekStreamChat {
                             if (finished.get()) {
                                 return;
                             }
-
                             HashMap<String, Object> done = new HashMap<>();
                             done.put("finishReason", resp.finishReason() == null
                                     ? "stop"
                                     : resp.finishReason().name().toLowerCase());
                             done.put("firstTokenMs",
                                     firstTokenMs.get() == -1 ? 0 : firstTokenMs.get());
-
                             var usage = resp.tokenUsage();
                             if (usage == null) {
                                 done.put("usage", null);
@@ -117,7 +112,6 @@ public class DeepseekStreamChat {
                                         "promptTokens", usage.inputTokenCount(),
                                         "completionTokens", usage.outputTokenCount()));
                             }
-
                             try {
                                 emitter.send(SseEmitter.event()
                                         .name("done")
@@ -125,7 +119,6 @@ public class DeepseekStreamChat {
                             } catch (IOException | IllegalStateException e) {
                                 log.info("SSE done send stopped: {}", e.toString());
                             }
-
                             if (finished.compareAndSet(false, true)) {
                                 emitter.complete();
                             }
