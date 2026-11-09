@@ -3,6 +3,8 @@ server:
 spring:
   application:
     name: backed
+  config:
+    import: "optional:file:./.env[.properties]"
   mvc:
     async:
       request-timeout: 60s
