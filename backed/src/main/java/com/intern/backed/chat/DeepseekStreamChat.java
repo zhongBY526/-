@@ -24,14 +24,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RestController
-@RequestMapping("/ai/chat")
+@RequestMapping("/api/chat")
 public class DeepseekStreamChat {
     private final DeepSeekSteamAssaistent deepSeekSteamAssaistent;
     public DeepseekStreamChat(DeepSeekSteamAssaistent deepSeekSteamAssaistent) {
         this.deepSeekSteamAssaistent = deepSeekSteamAssaistent;
     }
     static final Set<String> ALLOWED_STYLES = Set.of("严谨","温和","简洁");
-
     @PostMapping(value = "/stream", produces = "text/event-stream")
     public SseEmitter streamChat(@Valid @RequestBody ChatRequest request, HttpServletResponse response) {
                 // 1. 先校验，非法参数直接 400，不建立 SSE
