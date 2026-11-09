@@ -1,24 +1,31 @@
 <script setup>
-import { ref } from 'vue'
+import { ref ,computed } from 'vue'
+import MarkdownIt  from "markdown-it";
+import DOMPurify from 'dompurify'
 
 const input = ref('')
 const style = ref('严谨')
 const content = ref('')
 const error = ref('')
 const streaming = ref(false)
-
 const messageId = ref('')
 const firstTokenMs = ref(0)
 const serverFirstTokenMs = ref(0)
 const finishReason = ref('')
 const composing = ref(false)
-
+const md = new MarkdownIt({
+  html: false,      // 禁止原始 HTML，先挡一层 XSS
+  linkify: true,    // 自动识别链接
+  breaks: true      // 单个换行也换行，适合聊天
+})
+const renderedContent = computed(() =>
+    DOMPurify.sanitize(md.render(content.value))
+)
 let controller = null
 let startedAt = 0
 
 async function send() {
   if (!input.value.trim() || streaming.value) return
-
   content.value = ''
   error.value = ''
   messageId.value = ''
@@ -28,8 +35,9 @@ async function send() {
   streaming.value = true
   startedAt = performance.now()
   controller = new AbortController()
+  let ended = false
   try {
-    const response = await fetch('/ai/chat/stream', {
+    const response = await fetch('/api/chat/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -80,9 +88,11 @@ async function send() {
           }
           content.value += data.delta ?? ''
         } else if (event === 'done') {
+          ended = true
           serverFirstTokenMs.value = data.firstTokenMs ?? 0
           finishReason.value = data.finishReason ?? ''
         } else if (event === 'error') {
+          ended = true
           error.value = data.message ?? '模型调用失败'
         }
       }
@@ -92,6 +102,10 @@ async function send() {
       error.value = e.message
     }
   } finally {
+    const aborted = controller?.signal.aborted ?? false
+    if (!ended && !error.value && !aborted) {
+      error.value = '连接意外结束，请重试'
+    }
     streaming.value = false
     controller = null
   }
@@ -144,7 +158,8 @@ function onCompositionEnd() {
       <span>结束原因：{{ finishReason || '-' }}</span>
     </div>
     <p v-if="error" class="error">{{ error }}</p>
-    <pre class="output">{{ content }}</pre>
+    <div v-if="streaming && !content" class="loading">正在生成...</div>
+    <div class="output" v-html="renderedContent"></div>
   </div>
 </template>
 <style scoped>
@@ -187,7 +202,47 @@ button {
   background: #f6f6f6;
   padding: 12px;
   min-height: 140px;
-  white-space: pre-wrap;
+  line-height: 1.7;
   word-break: break-word;
+}
+
+.output :deep(p) {
+  margin: 0 0 10px;
+}
+
+.output :deep(ul),
+.output :deep(ol) {
+  padding-left: 22px;
+}
+
+.output :deep(pre) {
+  background: #1e1e1e;
+  color: #eee;
+  padding: 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+.output :deep(code) {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 13px;
+}
+
+.output :deep(pre code) {
+  background: transparent;
+  padding: 0;
+}
+
+.output :deep(p code),
+.output :deep(li code) {
+  background: #e8e8e8;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.loading {
+  color: #666;
+  font-size: 13px;
+  margin-bottom: 8px;
 }
 </style>
