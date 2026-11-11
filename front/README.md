@@ -1,38 +1,13 @@
 # front
 
-This template should help get you started developing with Vue 3 in Vite.
-
-## Recommended IDE Setup
-
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
-
-## Recommended Browser Setup
-
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
+W2 流式对话 Lab 的前端（Vue 3 + Vite）。完整启动步骤、接口协议与演示脚本见仓库根目录的 [README](../README.md)。
 
 ```sh
 npm install
+npm run dev     # http://localhost:5173，/api 代理到 http://localhost:8080
+npm run build   # 产物在 dist/
 ```
 
-### Compile and Hot-Reload for Development
-
-```sh
-npm run dev
-```
-
-### Compile and Minify for Production
-
-```sh
-npm run build
-```
+- `src/views/ChatViews.vue`：SSE 流式对话，展示首字耗时、结束原因，支持中断与新会话
+- `src/views/ExtractView.vue`：公文要素抽取
+- `vite.config.js`：开发端口与 `/api` 代理配置

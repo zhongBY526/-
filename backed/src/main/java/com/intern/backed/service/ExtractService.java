@@ -15,7 +15,6 @@ import java.util.Set;
 @Slf4j
 @Service
 public class ExtractService {
-
     private static final Set<String> DOC_TYPES =
             Set.of("通知", "请示", "报告", "函", "纪要", "其他");
 
@@ -33,13 +32,11 @@ public class ExtractService {
             raw = "";
         }
         String json = raw.trim();
-
         // 模型偶尔会包一层 Markdown 代码围栏，先剥掉
         if (json.startsWith("```")) {
             json = json.replaceFirst("^```(?:json)?\\s*", "")
                     .replaceFirst("\\s*```$", "");
         }
-
         ExtractResult parsed;
         try {
             parsed = objectMapper.readValue(json, ExtractResult.class);
@@ -49,12 +46,10 @@ public class ExtractService {
             return new ExtractResult(null, null, null, null, null,
                     List.of("结构化解析失败，请人工核对"));
         }
-
         List<String> warnings = new ArrayList<>();
         if (parsed.warnings() != null) {
             warnings.addAll(parsed.warnings());
         }
-
         String docType = parsed.docType();
         if (docType == null || docType.isBlank()) {
             docType = null;
@@ -66,23 +61,19 @@ public class ExtractService {
                 warnings.add("文种不在允许范围内，请人工核对");
             }
         }
-
         String title = parsed.title() == null ? null : parsed.title().trim();
         if (title == null || title.isEmpty()) {
             title = null;
             warnings.add("标题无法识别，请人工核对");
         }
-
         String addressee = parsed.addressee() == null ? null : parsed.addressee().trim();
         if (addressee != null && addressee.isEmpty()) {
             addressee = null;
         }
-
         String signature = parsed.signature() == null ? null : parsed.signature().trim();
         if (signature != null && signature.isEmpty()) {
             signature = null;
         }
-
         String date = parsed.date() == null ? null : parsed.date().trim();
         if (date == null) {
             warnings.add("日期无法识别，请人工核对");
@@ -94,7 +85,6 @@ public class ExtractService {
                 warnings.add("日期格式无法识别，请人工核对");
             }
         }
-
         return new ExtractResult(docType, title, addressee, signature, date, warnings);
     }
 }

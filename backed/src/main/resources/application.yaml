@@ -12,13 +12,13 @@ langchain4j:
   open-ai:
     streaming-chat-model:
       api-key: ${DEEPSEEK_API_KEY}
-      base-url: https://api.deepseek.com
-      model-name: deepseek-flash
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      model-name: ${DEEPSEEK_MODEL:deepseek-flash}
       timeout: 60s
     chat-model:
       api-key: ${DEEPSEEK_API_KEY}
-      base-url: https://api.deepseek.com
-      model-name: deepseek-flash
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      model-name: ${DEEPSEEK_MODEL:deepseek-flash}
       timeout: 60s
   ollama:
     embedding-model:

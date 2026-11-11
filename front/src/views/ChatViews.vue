@@ -9,9 +9,11 @@ const content = ref('')
 const error = ref('')
 const streaming = ref(false)
 const messageId = ref('')
+const conversationId = ref(sessionStorage.getItem('conversationId') || createConversationId())
 const firstTokenMs = ref(0)
 const serverFirstTokenMs = ref(0)
 const finishReason = ref('')
+const truncated = ref(false)
 const composing = ref(false)
 const md = new MarkdownIt({
   html: false,      // 禁止原始 HTML，先挡一层 XSS
@@ -24,6 +26,24 @@ const renderedContent = computed(() =>
 let controller = null
 let startedAt = 0
 
+function createConversationId() {
+  const id = crypto.randomUUID ? crypto.randomUUID() : `c-${Date.now()}`
+  sessionStorage.setItem('conversationId', id)
+  return id
+}
+
+function resetConversation() {
+  if (streaming.value) return
+  conversationId.value = createConversationId()
+  content.value = ''
+  error.value = ''
+  messageId.value = ''
+  firstTokenMs.value = 0
+  serverFirstTokenMs.value = 0
+  finishReason.value = ''
+  truncated.value = false
+}
+
 async function send() {
   if (!input.value.trim() || streaming.value) return
   content.value = ''
@@ -32,6 +52,7 @@ async function send() {
   firstTokenMs.value = 0
   serverFirstTokenMs.value = 0
   finishReason.value = ''
+  truncated.value = false
   streaming.value = true
   startedAt = performance.now()
   controller = new AbortController()
@@ -42,13 +63,25 @@ async function send() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message: input.value,
-        style: style.value
+        style: style.value,
+        conversationId: conversationId.value
       }),
       signal: controller.signal
     })
 
-    if (!response.ok || !response.body) {
-      throw new Error(`HTTP ${response.status}`)
+    if (!response.ok) {
+      // 400/502 走的是 JSON 响应，不是 SSE，别丢掉后端的 message
+      let message = `HTTP ${response.status}`
+      try {
+        const body = await response.json()
+        if (body?.message) message = body.message
+      } catch {
+        // 响应体不是 JSON，保留状态码提示
+      }
+      throw new Error(message)
+    }
+    if (!response.body) {
+      throw new Error('当前浏览器不支持流式响应')
     }
     const reader = response.body.getReader()
     const decoder = new TextDecoder('utf-8')
@@ -82,6 +115,10 @@ async function send() {
         }
         if (event === 'meta') {
           messageId.value = data.messageId ?? ''
+          if (data.conversationId) {
+            conversationId.value = data.conversationId
+            sessionStorage.setItem('conversationId', data.conversationId)
+          }
         } else if (event === 'token') {
           if (firstTokenMs.value === 0) {
             firstTokenMs.value = Math.round(performance.now() - startedAt)
@@ -91,6 +128,7 @@ async function send() {
           ended = true
           serverFirstTokenMs.value = data.firstTokenMs ?? 0
           finishReason.value = data.finishReason ?? ''
+          truncated.value = data.finishReason === 'length'
         } else if (event === 'error') {
           ended = true
           error.value = data.message ?? '模型调用失败'
@@ -150,13 +188,16 @@ function onCompositionEnd() {
     <div class="row">
       <button :disabled="streaming || !input.trim()" @click="send">发送</button>
       <button v-if="streaming" @click="stop">停止</button>
+      <button :disabled="streaming" @click="resetConversation">新会话</button>
     </div>
     <div class="meta">
       <span>消息 ID：{{ messageId || '-' }}</span>
+      <span>会话：{{ conversationId.slice(0, 8) }}</span>
       <span>前端首字：{{ firstTokenMs }} ms</span>
       <span>后端首字：{{ serverFirstTokenMs }} ms</span>
       <span>结束原因：{{ finishReason || '-' }}</span>
     </div>
+    <p v-if="truncated" class="warn">输出达到长度上限被截断（finishReason=length），请缩短问题或提高 max tokens</p>
     <p v-if="error" class="error">{{ error }}</p>
     <div v-if="streaming && !content" class="loading">正在生成...</div>
     <div class="output" v-html="renderedContent"></div>
@@ -196,6 +237,13 @@ button {
 
 .error {
   color: #c00;
+}
+
+.warn {
+  color: #9a6700;
+  background: #fff8e1;
+  padding: 8px 12px;
+  border-radius: 4px;
 }
 
 .output {
