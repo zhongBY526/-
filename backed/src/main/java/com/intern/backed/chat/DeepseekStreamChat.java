@@ -42,6 +42,8 @@ public class DeepseekStreamChat {
                         ? UUID.randomUUID().toString()
                         : request.conversationId().trim();
                 String memoryId = userId + ":" + conversationId;
+                log.info("chat start, traceId={}, memoryId={}, style={}, messageLength={}",
+                        traceId, memoryId, request.style(), request.message().length());
                 long startedAt = System.nanoTime();
                 AtomicLong firstTokenMs = new AtomicLong(-1);
                 AtomicBoolean finished = new AtomicBoolean(false);
@@ -77,8 +79,11 @@ public class DeepseekStreamChat {
                             if (finished.get()) {
                                 return;
                             }
-                            firstTokenMs.compareAndSet(-1,
-                                    (System.nanoTime() - startedAt) / 1_000_000);
+                            if (firstTokenMs.compareAndSet(-1,
+                                    (System.nanoTime() - startedAt) / 1_000_000)) {
+                                log.info("chat first token, traceId={}, firstTokenMs={}",
+                                        traceId, firstTokenMs.get());
+                            }
                             try {
                                 emitter.send(SseEmitter.event()
                                         .name("token")
@@ -92,10 +97,11 @@ public class DeepseekStreamChat {
                             if (finished.get()) {
                                 return;
                             }
-                            HashMap<String, Object> done = new HashMap<>();
-                            done.put("finishReason", resp.finishReason() == null
+                            String finishReason = resp.finishReason() == null
                                     ? "stop"
-                                    : resp.finishReason().name().toLowerCase());
+                                    : resp.finishReason().name().toLowerCase();
+                            HashMap<String, Object> done = new HashMap<>();
+                            done.put("finishReason", finishReason);
                             done.put("firstTokenMs",
                                     firstTokenMs.get() == -1 ? 0 : firstTokenMs.get());
                             var usage = resp.tokenUsage();
@@ -106,6 +112,11 @@ public class DeepseekStreamChat {
                                         "promptTokens", usage.inputTokenCount(),
                                         "completionTokens", usage.outputTokenCount()));
                             }
+                            log.info("chat done, traceId={}, finishReason={}, promptTokens={}, completionTokens={}, firstTokenMs={}",
+                                    traceId, finishReason,
+                                    usage == null ? -1 : usage.inputTokenCount(),
+                                    usage == null ? -1 : usage.outputTokenCount(),
+                                    firstTokenMs.get());
                             try {
                                 emitter.send(SseEmitter.event()
                                         .name("done")

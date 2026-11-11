@@ -1,4 +1,4 @@
-#  流式对话 Lab
+# W2 流式对话 Lab
 
 Vue3 + Spring Boot 3 + LangChain4j + DeepSeek 的最小全栈闭环：**Vue 页面 → Spring Boot 接口 → 大模型流式返回**，附带一个公文要素抽取接口。
 
@@ -105,6 +105,25 @@ npm run dev
 
 请求体 `{"text": "公文全文"}`，返回 `{code, message, data, traceId}`，`data` 含 `docType / title / addressee / signature / date / warnings`。模型输出不是合法 JSON 或字段越界时，会降级返回可人工核对的 `warnings`，不会抛 500。
 
+## W2 验收标准对照（G5）
+
+| 标准 | 实现 | 现场怎么证明 |
+| --- | --- | --- |
+| 首字延迟可感知 | 页面「首字」先显示 `等待中 x.x s`，收到第一个 token 后锁定耗时；≤3s 绿色、>3s 红色；同时显示「后端首字」区分浏览器/网络与模型耗时 | 发一句话，观察计时与颜色；后端日志有 `chat first token, traceId=..., firstTokenMs=...` |
+| 流式无截断 | 每个 token 单独推送；`done.finishReason` 映射为 `stop（正常完成）` / `length（被截断）`；`length` 时出现黄色告警；没收到 `done` 就断流会提示「连接意外结束」 | 看文字逐字出现且结束原因为 `stop`；日志 `chat done` 里有 `completionTokens` 与 `finishReason` |
+| JSON 解析失败有兜底 | `ExtractService` 先剥 Markdown 代码围栏，解析异常或字段越界不抛错，降级为 `warnings` 供人工核对 | 「公文抽取」粘贴非公文文本，仍返回字段 + warnings；单测见下方命令 |
+| 异常有日志 | 每个请求生成 `traceId`，贯穿 start / first token / done / error 四条日志；未捕获异常统一返回 500 + traceId，并打 `error` 日志 | 把 Key 改错后发消息：页面显示错误与 traceId，`grep <traceId>` 后端日志能对上 |
+| README 可复现 | 快速启动 + 现场演示 + 10 分钟自测 | 干净目录 clone 后只按本 README 操作 |
+
+兜底逻辑的离线验证（不消耗模型额度）：
+
+```bash
+cd backed
+./mvnw -Dtest=ExtractServiceTest test
+```
+
+覆盖三种情况：返回非 JSON、返回带 ```` ```json ```` 围栏、文种/日期越界。全部通过说明"模型乱答"不会让接口 500。
+
 ## 10 分钟自测（对应第 1 次汇报检查项）
 
 在干净目录里重新 clone，只照本 README 操作并计时：
@@ -112,10 +131,10 @@ npm run dev
 - [ ] 仓库无密钥：`git ls-files | grep -i env` 只应看到 `.env.example`
 - [ ] 后端从 `backed/` 启动，无手工改代码
 - [ ] 前端 `npm install && npm run dev` 一次成功
-- [ ] 页面首字 ≤3 秒（看「后端首字」排除网络因素）
-- [ ] 文字逐字出现，结束时显示 `finishReason=stop`
+- [ ] 首字：等待时显示「等待中 x.x s」，收到首字后锁定耗时并变绿；超过 3 秒变红，先看「后端首字」排除网络因素
+- [ ] 文字逐字出现，结束原因显示 `stop（正常完成）`
 - [ ] 切换风格或改 `messagePrompt.md` 后重启，输出变化可解释
-- [ ] 制造一次异常（例如把 `DEEPSEEK_API_KEY` 改错），页面有明确提示而不是空白
+- [ ] 制造一次异常（例如把 `DEEPSEEK_API_KEY` 改错），页面显示错误信息和 `traceId`，后端日志能按该 `traceId` 查到
 
 ## 常见问题
 
@@ -136,6 +155,3 @@ npm run dev
 - 密钥只放 `backed/.env`，该文件已在 `.gitignore` 中；提交前跑一次 `git status`。
 - `target/`、`node_modules/`、`dist/`、`.idea/` 均不入库。
 - 报错日志带 `traceId`，前端错误提示与后端日志能对上。
-cp .env.example .env
-# 编辑 .env，填入 DEEPSEEK_API_KEY
-./mvnw spring-boot:run

@@ -10,10 +10,12 @@ const error = ref('')
 const streaming = ref(false)
 const messageId = ref('')
 const conversationId = ref(sessionStorage.getItem('conversationId') || createConversationId())
-const firstTokenMs = ref(0)
-const serverFirstTokenMs = ref(0)
+const firstTokenMs = ref(null)
+const serverFirstTokenMs = ref(null)
+const waitingMs = ref(0)
 const finishReason = ref('')
 const truncated = ref(false)
+const errorTraceId = ref('')
 const composing = ref(false)
 const md = new MarkdownIt({
   html: false,      // 禁止原始 HTML，先挡一层 XSS
@@ -23,8 +25,44 @@ const md = new MarkdownIt({
 const renderedContent = computed(() =>
     DOMPurify.sanitize(md.render(content.value))
 )
+const firstTokenText = computed(() => {
+  if (firstTokenMs.value !== null) return `${firstTokenMs.value} ms`
+  return streaming.value ? `等待中 ${(waitingMs.value / 1000).toFixed(1)} s` : '-'
+})
+const firstTokenState = computed(() => {
+  if (firstTokenMs.value === null) return ''
+  return firstTokenMs.value <= 3000 ? 'ok' : 'slow'
+})
+const finishReasonText = computed(() => {
+  switch (finishReason.value) {
+    case '':
+      return '-'
+    case 'stop':
+      return 'stop（正常完成）'
+    case 'length':
+      return 'length（被截断）'
+    default:
+      return finishReason.value
+  }
+})
 let controller = null
+let waitTimer = null
 let startedAt = 0
+
+function startWaitTimer() {
+  stopWaitTimer()
+  waitingMs.value = 0
+  waitTimer = setInterval(() => {
+    waitingMs.value = Math.round(performance.now() - startedAt)
+  }, 100)
+}
+
+function stopWaitTimer() {
+  if (waitTimer) {
+    clearInterval(waitTimer)
+    waitTimer = null
+  }
+}
 
 function createConversationId() {
   const id = crypto.randomUUID ? crypto.randomUUID() : `c-${Date.now()}`
@@ -37,24 +75,29 @@ function resetConversation() {
   conversationId.value = createConversationId()
   content.value = ''
   error.value = ''
+  errorTraceId.value = ''
   messageId.value = ''
-  firstTokenMs.value = 0
-  serverFirstTokenMs.value = 0
+  firstTokenMs.value = null
+  serverFirstTokenMs.value = null
+  waitingMs.value = 0
   finishReason.value = ''
   truncated.value = false
+  stopWaitTimer()
 }
 
 async function send() {
   if (!input.value.trim() || streaming.value) return
   content.value = ''
   error.value = ''
+  errorTraceId.value = ''
   messageId.value = ''
-  firstTokenMs.value = 0
-  serverFirstTokenMs.value = 0
+  firstTokenMs.value = null
+  serverFirstTokenMs.value = null
   finishReason.value = ''
   truncated.value = false
   streaming.value = true
   startedAt = performance.now()
+  startWaitTimer()
   controller = new AbortController()
   let ended = false
   try {
@@ -75,6 +118,7 @@ async function send() {
       try {
         const body = await response.json()
         if (body?.message) message = body.message
+        if (body?.traceId) errorTraceId.value = body.traceId
       } catch {
         // 响应体不是 JSON，保留状态码提示
       }
@@ -120,18 +164,20 @@ async function send() {
             sessionStorage.setItem('conversationId', data.conversationId)
           }
         } else if (event === 'token') {
-          if (firstTokenMs.value === 0) {
+          if (firstTokenMs.value === null) {
             firstTokenMs.value = Math.round(performance.now() - startedAt)
+            stopWaitTimer()
           }
           content.value += data.delta ?? ''
         } else if (event === 'done') {
           ended = true
-          serverFirstTokenMs.value = data.firstTokenMs ?? 0
+          serverFirstTokenMs.value = data.firstTokenMs ?? null
           finishReason.value = data.finishReason ?? ''
           truncated.value = data.finishReason === 'length'
         } else if (event === 'error') {
           ended = true
           error.value = data.message ?? '模型调用失败'
+          errorTraceId.value = data.traceId ?? ''
         }
       }
     }
@@ -140,6 +186,7 @@ async function send() {
       error.value = e.message
     }
   } finally {
+    stopWaitTimer()
     const aborted = controller?.signal.aborted ?? false
     if (!ended && !error.value && !aborted) {
       error.value = '连接意外结束，请重试'
@@ -193,13 +240,15 @@ function onCompositionEnd() {
     <div class="meta">
       <span>消息 ID：{{ messageId || '-' }}</span>
       <span>会话：{{ conversationId.slice(0, 8) }}</span>
-      <span>前端首字：{{ firstTokenMs }} ms</span>
-      <span>后端首字：{{ serverFirstTokenMs }} ms</span>
-      <span>结束原因：{{ finishReason || '-' }}</span>
+      <span>首字：<b :class="firstTokenState">{{ firstTokenText }}</b></span>
+      <span>后端首字：{{ serverFirstTokenMs === null ? '-' : serverFirstTokenMs + ' ms' }}</span>
+      <span>结束原因：{{ finishReasonText }}</span>
     </div>
     <p v-if="truncated" class="warn">输出达到长度上限被截断（finishReason=length），请缩短问题或提高 max tokens</p>
-    <p v-if="error" class="error">{{ error }}</p>
-    <div v-if="streaming && !content" class="loading">正在生成...</div>
+    <p v-if="error" class="error">
+      {{ error }}<span v-if="errorTraceId" class="trace">（traceId: {{ errorTraceId }}）</span>
+    </p>
+    <div v-if="streaming && !content" class="loading">正在等待首字：{{ (waitingMs / 1000).toFixed(1) }} s</div>
     <div class="output" v-html="renderedContent"></div>
   </div>
 </template>
@@ -233,6 +282,19 @@ button {
   flex-wrap: wrap;
   color: #666;
   font-size: 13px;
+}
+
+.meta .ok {
+  color: #2e7d32;
+}
+
+.meta .slow {
+  color: #c00;
+}
+
+.trace {
+  color: #666;
+  font-size: 12px;
 }
 
 .error {
