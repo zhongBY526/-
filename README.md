@@ -1,4 +1,4 @@
-# W2 流式对话 Lab
+#  流式对话 Lab
 
 Vue3 + Spring Boot 3 + LangChain4j + DeepSeek 的最小全栈闭环：**Vue 页面 → Spring Boot 接口 → 大模型流式返回**，附带一个公文要素抽取接口。
 
@@ -136,3 +136,6 @@ npm run dev
 - 密钥只放 `backed/.env`，该文件已在 `.gitignore` 中；提交前跑一次 `git status`。
 - `target/`、`node_modules/`、`dist/`、`.idea/` 均不入库。
 - 报错日志带 `traceId`，前端错误提示与后端日志能对上。
+cp .env.example .env
+# 编辑 .env，填入 DEEPSEEK_API_KEY
+./mvnw spring-boot:run
