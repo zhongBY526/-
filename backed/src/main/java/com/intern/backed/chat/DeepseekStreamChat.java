@@ -2,21 +2,17 @@ package com.intern.backed.chat;
 
 import com.intern.backed.config.DeepSeekSteamAssaistent;
 import com.intern.backed.dto.ChatRequest;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -30,54 +26,53 @@ public class DeepseekStreamChat {
     public DeepseekStreamChat(DeepSeekSteamAssaistent deepSeekSteamAssaistent) {
         this.deepSeekSteamAssaistent = deepSeekSteamAssaistent;
     }
-    static final Set<String> ALLOWED_STYLES = Set.of("严谨","温和","简洁");
     @PostMapping(value = "/stream", produces = "text/event-stream")
     public SseEmitter streamChat(@Valid @RequestBody ChatRequest request, HttpServletResponse response) {
-                // 1. 先校验，非法参数直接 400，不建立 SSE
-                Set<String> allowedStyles = Set.of("严谨", "温和", "简洁");
-                if (!allowedStyles.contains(request.style())) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                            "style 仅支持 严谨/温和/简洁");
-                }
+                // 参数校验由 @Valid 完成，失败直接 400，不建立 SSE
                 response.setHeader("X-Accel-Buffering", "no");
                 response.setHeader("Cache-Control", "no-cache");
 
                 String messageId = "m-" + UUID.randomUUID();
                 String traceId = UUID.randomUUID().toString();
+                String userId = request.userId() == null || request.userId().isBlank()
+                        ? "guest"
+                        : request.userId().trim();
+                String conversationId = request.conversationId() == null
+                        || request.conversationId().isBlank()
+                        ? UUID.randomUUID().toString()
+                        : request.conversationId().trim();
+                String memoryId = userId + ":" + conversationId;
                 long startedAt = System.nanoTime();
                 AtomicLong firstTokenMs = new AtomicLong(-1);
                 AtomicBoolean finished = new AtomicBoolean(false);
-
                 SseEmitter emitter = new SseEmitter(60_000L);
-
                 emitter.onCompletion(() -> {
                     finished.set(true);
                     long totalMs = (System.nanoTime() - startedAt) / 1_000_000;
                     log.info("SSE completed, traceId={}, totalMs={}", traceId, totalMs);
                 });
-
                 emitter.onTimeout(() -> {
                     finished.set(true);
                     log.warn("SSE timeout, traceId={}", traceId);
                 });
-
                 emitter.onError(e -> {
                     finished.set(true);
                     log.warn("SSE client disconnected, traceId={}, error={}", traceId, e.toString());
                 });
-
                 // 2. 发送 meta
                 try {
                     emitter.send(SseEmitter.event()
                             .name("meta")
-                            .data(Map.of("messageId", messageId), MediaType.APPLICATION_JSON));
+                            .data(Map.of(
+                                    "messageId", messageId,
+                                    "conversationId", conversationId), MediaType.APPLICATION_JSON));
                 } catch (IOException | IllegalStateException e) {
                     finished.set(true);
                     log.info("SSE meta send stopped: {}", e.toString());
                     return emitter;
                 }
                 // 3. 开始调用模型
-                deepSeekSteamAssaistent.chat(request.style(), request.message())
+                deepSeekSteamAssaistent.chat(memoryId, request.style(), request.message())
                         .onPartialResponse(delta -> {
                             if (finished.get()) {
                                 return;

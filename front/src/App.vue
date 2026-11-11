@@ -15,7 +15,6 @@ const active = ref('chat')
       公文抽取
     </button>
   </div>
-
   <ChatViews v-if="active === 'chat'" />
   <ExtractView v-else />
 </template>
