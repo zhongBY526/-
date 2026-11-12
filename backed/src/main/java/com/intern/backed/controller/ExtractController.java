@@ -9,20 +9,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.UUID;
-
 @Slf4j
 @RestController
 @RequestMapping("/api/extract")
 public class ExtractController {
-
     private final ExtractService extractService;
-
     public ExtractController(ExtractService extractService) {
         this.extractService = extractService;
     }
-
     @PostMapping
     public ResponseEntity<ApiResponse<ExtractResult>> extract(
             @Valid @RequestBody ExtractRequest request) {
