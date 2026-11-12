@@ -17,11 +17,12 @@ Vue3 + Spring Boot 3 + LangChain4j + DeepSeek 的最小全栈闭环：**Vue 页�
 │   ├── .env.example        # 环境变量样例（复制成 .env 使用）
 │   └── src/main/
 │       ├── java/com/intern/backed/
-│       │   ├── chat/       # /api/chat/stream（SSE）、/api/extract
+│       │   ├── chat/       # /api/chat/stream（SSE）
+│       │   ├── controller/ # /api/extract（公文要素抽取）
 │       │   ├── config/     # LangChain4j AiService、ChatMemory、JSON 模型
 │       │   ├── dto/        # 请求/响应对象
 │       │   ├── service/    # 公文抽取的解析与兜底
-│       │   └── common/     # 统一响应、全局异常处理
+│       │   └── common/     # 统一响应、全局异常处理、traceId 过滤器
 │       └── resources/
 │           ├── application.yaml    # 端口、模型、.env 导入
 │           ├── messagePrompt.md    # 对话系统提示词（含 {{style}} 变量）
@@ -119,10 +120,10 @@ npm run dev
 
 ```bash
 cd backed
-./mvnw -Dtest=ExtractServiceTest test
+./mvnw test
 ```
 
-覆盖三种情况：返回非 JSON、返回带 ```` ```json ```` 围栏、文种/日期越界。全部通过说明"模型乱答"不会让接口 500。
+覆盖 7 个用例：返回非 JSON、返回带 ```` ```json ```` 围栏、文种/日期越界、空文本、超长文本（>10000 字）、正常输入。全部通过说明"模型乱答"或"输入越界"都不会让接口 500。
 
 ## 10 分钟自测（对应第 1 次汇报检查项）
 
@@ -133,6 +134,8 @@ cd backed
 - [ ] 前端 `npm install && npm run dev` 一次成功
 - [ ] 首字：等待时显示「等待中 x.x s」，收到首字后锁定耗时并变绿；超过 3 秒变红，先看「后端首字」排除网络因素
 - [ ] 文字逐字出现，结束原因显示 `stop（正常完成）`
+- [ ] 同一问题分别用「严谨 / 简洁」提问，回答篇幅明显不同（实测 401 字 vs 74 字）
+- [ ] 响应头 `X-Trace-Id` 与响应体 / 页面上的 traceId 一致
 - [ ] 切换风格或改 `messagePrompt.md` 后重启，输出变化可解释
 - [ ] 制造一次异常（例如把 `DEEPSEEK_API_KEY` 改错），页面显示错误信息和 `traceId`，后端日志能按该 `traceId` 查到
 
