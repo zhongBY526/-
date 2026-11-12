@@ -26,4 +26,8 @@ langchain4j:
       base-url: http://localhost:11434
       timeout: 60s
 
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%X{traceId:-}] [%15.15t] %-40.40logger{39} : %m%n"
+
 

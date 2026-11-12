@@ -1,11 +1,13 @@
 package com.intern.backed.chat;
 
+import com.intern.backed.common.TraceIdFilter;
 import com.intern.backed.config.DeepSeekSteamAssaistent;
 import com.intern.backed.dto.ChatRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,13 +29,13 @@ public class DeepseekStreamChat {
         this.deepSeekSteamAssaistent = deepSeekSteamAssaistent;
     }
     @PostMapping(value = "/stream", produces = "text/event-stream")
-    public SseEmitter streamChat(@Valid @RequestBody ChatRequest request, HttpServletResponse response) {
+    public SseEmitter streamChat(@Valid @RequestBody ChatRequest request, HttpServletResponse response,
+                                 @RequestAttribute(TraceIdFilter.TRACE_ID_ATTRIBUTE) String traceId) {
                 // 参数校验由 @Valid 完成，失败直接 400，不建立 SSE
                 response.setHeader("X-Accel-Buffering", "no");
                 response.setHeader("Cache-Control", "no-cache");
 
                 String messageId = "m-" + UUID.randomUUID();
-                String traceId = UUID.randomUUID().toString();
                 String userId = request.userId() == null || request.userId().isBlank()
                         ? "guest"
                         : request.userId().trim();
