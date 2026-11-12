@@ -1,6 +1,7 @@
-package com.intern.backed.chat;
+package com.intern.backed.controller;
 
 import com.intern.backed.common.ApiResponse;
+import com.intern.backed.common.TraceIdFilter;
 import com.intern.backed.dto.ExtractRequest;
 import com.intern.backed.dto.ExtractResult;
 import com.intern.backed.service.ExtractService;
@@ -9,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.UUID;
 @Slf4j
 @RestController
 @RequestMapping("/api/extract")
@@ -20,9 +20,8 @@ public class ExtractController {
     }
     @PostMapping
     public ResponseEntity<ApiResponse<ExtractResult>> extract(
-            @Valid @RequestBody ExtractRequest request) {
-
-        String traceId = UUID.randomUUID().toString();
+            @Valid @RequestBody ExtractRequest request,
+            @RequestAttribute(TraceIdFilter.TRACE_ID_ATTRIBUTE) String traceId) {
 
         try {
             ExtractResult result = extractService.extract(request.text(), traceId);
