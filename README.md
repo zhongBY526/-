@@ -13,6 +13,8 @@ Vue3 + Spring Boot 3 + LangChain4j + DeepSeek 的最小全栈闭环：**Vue 页�
 
 ```
 .
+├── start.sh                # 一键启动（Git Bash / macOS / Linux）
+├── start.ps1               # 一键启动（Windows PowerShell）
 ├── backed/                 # Spring Boot 后端
 │   ├── .env.example        # 环境变量样例（复制成 .env 使用）
 │   └── src/main/
@@ -42,7 +44,21 @@ Vue3 + Spring Boot 3 + LangChain4j + DeepSeek 的最小全栈闭环：**Vue 页�
 
 ## 快速启动
 
-### 1. 后端
+### 方式 A：一键启动（推荐）
+
+```bash
+./start.sh          # Git Bash / macOS / Linux：前台启动，Ctrl+C 停止
+```
+
+```powershell
+.\start.ps1         # Windows PowerShell：后端、前端各开一个窗口
+```
+
+脚本会依次检查：`.env` 是否存在且 Key 不是占位值 → 8080/5173 是否被占用 → 前端依赖是否安装，然后拉起前后端，后端日志写到 `logs/backend.log`、前端日志写到 `logs/front.log`。端口冲突时可用 `BACKEND_PORT=18080 FRONT_PORT=15173 ./start.sh` 换端口（改了后端端口需同步修改 `front/vite.config.js` 的代理地址）。
+
+### 方式 B：手动启动
+
+#### 1. 后端
 
 ```bash
 cd backed
@@ -53,7 +69,7 @@ cp .env.example .env          # PowerShell: Copy-Item .env.example .env
 
 看到 `Tomcat started on port 8080` 即成功。**必须在 `backed/` 目录下启动**，因为 `.env` 是按当前工作目录导入的。
 
-### 2. 前端（另开一个终端）
+#### 2. 前端（另开一个终端）
 
 ```bash
 cd front
@@ -65,8 +81,7 @@ npm run dev
 
 ### 3. 验证
 
-1. 页面选「流式对话」，输入问题，回车；
-2. 文字应逐字出现，底部显示「前端首字 / 后端首字 / 结束原因」；
+1. 页面选「流式对话」，输入问题，回车；2. 文字应逐字出现，底部显示「前端首字 / 后端首字 / 结束原因」；
 3. 切到「公文抽取」，点「填充示例」再点「抽取」，应返回结构化字段。
 
 ## 现场演示：改 Prompt 变量
@@ -131,6 +146,7 @@ cd backed
 
 - [ ] 仓库无密钥：`git ls-files | grep -i env` 只应看到 `.env.example`
 - [ ] 后端从 `backed/` 启动，无手工改代码
+- [ ] `./start.sh` 或 `.\start.ps1` 能一次拉起前后端（缺 Key / 端口占用时有明确提示）
 - [ ] 前端 `npm install && npm run dev` 一次成功
 - [ ] 首字：等待时显示「等待中 x.x s」，收到首字后锁定耗时并变绿；超过 3 秒变红，先看「后端首字」排除网络因素
 - [ ] 文字逐字出现，结束原因显示 `stop（正常完成）`
