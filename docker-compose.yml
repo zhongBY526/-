@@ -1,0 +1,22 @@
+services:
+  pgvector:
+    image: pgvector/pgvector:pg17
+    container_name: rag-pgvector
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ragdb
+      POSTGRES_USER: rag
+      POSTGRES_PASSWORD: rag
+    volumes:
+      - pgvector-data:/var/lib/postgresql/data
+      # 仅首次初始化数据卷时执行；改表结构需删卷重建或手动执行 SQL
+      - ./backed/src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag -d ragdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgvector-data:

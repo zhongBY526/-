@@ -28,7 +28,6 @@ async function extract() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: text.value })
     })
-
     const body = await response.json()
 
     if (!response.ok || body.code !== 0) {
@@ -44,13 +43,10 @@ async function extract() {
   }
 }
 </script>
-
 <template>
   <div class="page">
     <h1>公文要素抽取</h1>
-
     <textarea v-model="text" placeholder="粘贴公文文本..."></textarea>
-
     <div class="row">
       <button :disabled="loading || !text.trim()" @click="extract">
         {{ loading ? '抽取中...' : '抽取' }}

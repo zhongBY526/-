@@ -34,7 +34,6 @@ public class TraceIdFilter extends OncePerRequestFilter {
             MDC.remove(MDC_KEY);
         }
     }
-
     private String resolve(String candidate) {
         if (candidate != null && candidate.matches("[A-Za-z0-9-]{1,64}")) {
             return candidate;

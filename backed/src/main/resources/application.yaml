@@ -4,28 +4,60 @@ spring:
   application:
     name: backed
   config:
-    import: "optional:file:./.env[.properties]"
+    import:
+      - "optional:file:./.env[.properties]"
+      - "optional:file:./backed/.env[.properties]"
   mvc:
     async:
-      request-timeout: 60s
+      request-timeout: 360s
+  datasource:
+    url: jdbc:postgresql://${PG_HOST:localhost}:${PG_PORT:5432}/${PG_DATABASE:ragdb}
+    username: ${PG_USER:rag}
+    password: ${PG_PASSWORD:rag}
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
 langchain4j:
   open-ai:
     streaming-chat-model:
       api-key: ${DEEPSEEK_API_KEY}
       base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
-      model-name: ${DEEPSEEK_MODEL:deepseek-flash}
-      timeout: 60s
+      model-name: ${DEEPSEEK_MODEL:deepseek-chat}
+      timeout: 5m
     chat-model:
       api-key: ${DEEPSEEK_API_KEY}
       base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
-      model-name: ${DEEPSEEK_MODEL:deepseek-flash}
+      model-name: ${DEEPSEEK_MODEL:deepseek-chat}
       timeout: 60s
+rag:
+  pgvector:
+    host: ${PG_HOST:localhost}
+    port: ${PG_PORT:5432}
+    database: ${PG_DATABASE:ragdb}
+    user: ${PG_USER:rag}
+    password: ${PG_PASSWORD:rag}
+    table: rag_embedding
+    dimension: 1024
   ollama:
-    embedding-model:
-      model-name: bge-m3
-      base-url: http://localhost:11434
-      timeout: 60s
-
+    base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+    model-name: ${OLLAMA_EMBEDDING_MODEL:bge-m3}
+  ingestion:
+    chunk-size: 500
+    chunk-overlap: 50
+  retrieval:
+    vector-top-k: 20
+    keyword-top-k: 20
+    final-top-k: 5
+    min-score: 0.3
+  rerank:
+    # 百炼 rerank 走 DashScope 原生协议，base-url 只到域名，末尾不能带 /compatible-mode/v1
+    base-url: ${RERANK_BASE_URL:https://ws-tia6fiv8q3ayboeg.cn-beijing.maas.aliyuncs.com}
+    api-key: ${QWEN_API_KEY:}
+    model-name: ${RERANK_MODEL:qwen3.7-text-rerank}
+    timeout: 30s
+  retry:
+    max: 2
 logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%X{traceId:-}] [%15.15t] %-40.40logger{39} : %m%n"

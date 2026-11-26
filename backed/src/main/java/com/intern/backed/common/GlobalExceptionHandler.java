@@ -30,7 +30,6 @@ public class GlobalExceptionHandler {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new ApiResponse<>(400, message, null, traceId));
     }
-
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Void>> handleUnreadable(HttpMessageNotReadableException e,
                                                               HttpServletRequest request) {
@@ -40,7 +39,24 @@ public class GlobalExceptionHandler {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new ApiResponse<>(400, "请求体格式错误", null, traceId));
     }
-
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUnauthorized(UnauthorizedException e,
+                                                                HttpServletRequest request) {
+        String traceId = resolveTraceId(request);
+        log.warn("unauthorized, traceId={}, message={}", traceId, e.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ApiResponse<>(401, e.getMessage(), null, traceId));
+    }
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiResponse<Void>> handleForbidden(ForbiddenException e,
+                                                             HttpServletRequest request) {
+        String traceId = resolveTraceId(request);
+        log.warn("forbidden, traceId={}, message={}", traceId, e.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ApiResponse<>(403, e.getMessage(), null, traceId));
+    }
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnexpected(Exception e, HttpServletRequest request) {
         String traceId = resolveTraceId(request);
@@ -60,12 +76,30 @@ public class GlobalExceptionHandler {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new ApiResponse<>(500, "服务内部错误，请稍后重试", null, traceId));
     }
-
     private String resolveTraceId(HttpServletRequest request) {
         Object attribute = request.getAttribute(TraceIdFilter.TRACE_ID_ATTRIBUTE);
         if (attribute instanceof String traceId && !traceId.isBlank()) {
             return traceId;
         }
         return UUID.randomUUID().toString();
+    }
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException e,
+                                                                   HttpServletRequest request) {
+        String traceId = resolveTraceId(request);
+        log.warn("bad argument, traceId={}, message={}", traceId, e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ApiResponse<>(400, e.getMessage(), null, traceId));
+    }
+    // 工作流状态机非法迁移（如未确认就导出）→ 409，前端可直接展示 message
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalState(IllegalStateException e,
+                                                                HttpServletRequest request) {
+        String traceId = resolveTraceId(request);
+        log.warn("state conflict, traceId={}, message={}", traceId, e.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ApiResponse<>(409, e.getMessage(), null, traceId));
     }
 }

@@ -34,7 +34,6 @@ public class DeepseekStreamChat {
                 // 参数校验由 @Valid 完成，失败直接 400，不建立 SSE
                 response.setHeader("X-Accel-Buffering", "no");
                 response.setHeader("Cache-Control", "no-cache");
-
                 String messageId = "m-" + UUID.randomUUID();
                 String userId = request.userId() == null || request.userId().isBlank()
                         ? "guest"

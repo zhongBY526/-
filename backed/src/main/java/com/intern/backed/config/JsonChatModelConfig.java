@@ -1,5 +1,6 @@
 package com.intern.backed.config;
 
+import dev.langchain4j.model.chat.Capability;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
