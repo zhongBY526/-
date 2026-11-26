@@ -40,6 +40,14 @@ const pipeline = computed(() => {
 const steps = computed(() => parseJson(current.value?.steps, []))
 const sources = computed(() => parseJson(current.value?.sources, []))
 const formatReport = computed(() => parseJson(current.value?.formatReport, null))
+// 格式校验报告统计：ERROR 为阻断级硬伤（passed=false 的唯一依据），WARN 为瑕疵（只扣分不阻断）
+const reportStats = computed(() => {
+  const items = formatReport.value?.items || []
+  return {
+    errors: items.filter(i => !i.passed && i.severity === 'ERROR').length,
+    warns: items.filter(i => !i.passed && i.severity === 'WARN').length,
+  }
+})
 
 function stepOf(node) {
   return steps.value.find(s => s.node === node)
@@ -229,11 +237,13 @@ onUnmounted(() => clearTimeout(pollTimer))
           <pre class="draft">{{ current.draft }}</pre>
         </section>
 
-        <!-- 格式校验报告 -->
-        <section v-if="formatReport && !formatReport.skipped" class="panel">
+        <!-- 格式校验报告：只有带 items 才是真实报告；CHAT/STATS 的 {} 与 QA 的 skipped 都不渲染 -->
+        <section v-if="formatReport?.items?.length" class="panel">
           <h3>格式校验报告（Skill）
-            <span class="score" :class="formatReport.passed ? 'score-ok' : 'score-bad'">
-              {{ formatReport.score }} 分 · {{ formatReport.passed ? '通过' : '存在硬伤' }}
+            <span class="score" :class="reportStats.errors ? 'score-bad' : 'score-ok'">
+              {{ formatReport.score }} 分 ·
+              {{ reportStats.errors ? reportStats.errors + ' 处硬伤' : '无硬伤' }}
+              <template v-if="reportStats.warns"> · {{ reportStats.warns }} 处瑕疵</template>
             </span>
           </h3>
           <ul class="rule-list">

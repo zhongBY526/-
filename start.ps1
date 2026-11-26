@@ -1,4 +1,5 @@
-# W2 一键启动（Windows PowerShell）：后端 + 前端各开一个窗口
+﻿# W3-W4 一键启动（Windows PowerShell）：后端 + 前端各开一个窗口
+# 先启动 pgvector 与 Ollama，见 README「快速启动」第 1、2 步
 # 用法：右键「使用 PowerShell 运行」，或在 PowerShell 中执行 .\start.ps1
 
 $ErrorActionPreference = "Stop"
@@ -32,6 +33,17 @@ foreach ($port in 8080, 5173) {
     }
 }
 
+# 依赖提示（不自动启动，避免误改本地环境）
+try {
+    Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:11434/api/tags" -TimeoutSec 2 | Out-Null
+} catch {
+    Write-Host "[提示] Ollama 未运行：上传文档/评测会失败。请先执行 ollama serve 和 ollama pull bge-m3" -ForegroundColor Yellow
+}
+$pg = docker ps --format '{{.Names}}' 2>$null | Select-String -SimpleMatch 'rag-pgvector'
+if (-not $pg) {
+    Write-Host "[提示] pgvector 容器未运行：请先执行 docker compose up -d" -ForegroundColor Yellow
+}
+
 if (-not (Test-Path (Join-Path $front "node_modules"))) {
     Write-Host "首次运行：安装前端依赖（npm install）..." -ForegroundColor Cyan
     Push-Location $front
@@ -50,5 +62,5 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$front'; npm 
 Write-Host ""
 Write-Host "后端：http://localhost:8080" -ForegroundColor Green
 Write-Host "前端：http://localhost:5173" -ForegroundColor Green
-Write-Host "预热：node warmup.js" -ForegroundColor Green
+Write-Host "登录账号：admin/admin123 或 demo/demo123" -ForegroundColor Green
 Write-Host "停止：分别在两个新窗口按 Ctrl+C" -ForegroundColor Green

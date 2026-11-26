@@ -200,6 +200,8 @@ public class DocWorkflow {
         String text = kbStatsTool.render(result);
         boolean ok = Boolean.TRUE.equals(result.get("ok"));
         return Map.of(DocWorkflowState.DRAFT, text,
+                // STATS 分支不经过 formatCheck 节点，显式标记跳过，避免落库成空对象 {} 被前端当真实报告渲染
+                DocWorkflowState.FORMAT_REPORT, Map.of("skipped", true, "passed", true),
                 DocWorkflowState.STEPS, state.appendStep("stats", ok ? "ok" : "fallback",
                         "KbStatsTool " + (ok ? "查询成功" : "查询失败已兜底")));
     }
@@ -214,6 +216,8 @@ public class DocWorkflow {
                 : "你好！我是公文工作流助手。时间服务暂时不可用（已重试并兜底），"
                     + "不影响其他功能：可以让我查询知识库政策、起草公文或统计入库情况。";
         return Map.of(DocWorkflowState.DRAFT, text,
+                // CHAT 分支同样不经过 formatCheck，显式标记跳过
+                DocWorkflowState.FORMAT_REPORT, Map.of("skipped", true, "passed", true),
                 DocWorkflowState.STEPS, state.appendStep("chat", ok ? "ok" : "fallback",
                         "HttpTimeTool " + (ok ? "调用成功" : "调用失败已兜底")));
     }

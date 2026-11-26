@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# W2 一键启动：后端 (Spring Boot) + 前端 (Vite)
+# W3-W4 一键启动：后端 (Spring Boot) + 前端 (Vite)
+# 先启动 pgvector 与 Ollama，见 README「快速启动」第 1、2 步
 # 用法：./start.sh                # 默认 8080 / 5173
 #       BACKEND_PORT=18080 FRONT_PORT=15173 ./start.sh   # 自定义端口（改了后端端口需同步改 front/vite.config.js 的代理）
 set -euo pipefail
@@ -32,6 +33,16 @@ if port_in_use "http://127.0.0.1:${BACKEND_PORT}/"; then
 fi
 if port_in_use "http://127.0.0.1:${FRONT_PORT}/"; then
   fail "前端端口 ${FRONT_PORT} 已被占用。先关闭占用进程，或用 FRONT_PORT=15173 换端口。"
+fi
+
+# 2.5) 依赖提示（不自动启动，避免误改本地环境）
+if ! curl -s --noproxy '*' --max-time 2 "http://localhost:11434/api/tags" >/dev/null 2>&1; then
+  echo "[提示] Ollama 未运行：上传文档/评测会失败。请先执行 ollama serve && ollama pull bge-m3"
+fi
+if command -v docker >/dev/null 2>&1; then
+  if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -qx 'rag-pgvector'; then
+    echo "[提示] pgvector 容器未运行：请先执行 docker compose up -d"
+  fi
 fi
 
 # 3) 前端依赖
@@ -72,7 +83,7 @@ fi
 echo ""
 echo "后端已就绪：http://localhost:${BACKEND_PORT}"
 echo "前端地址：  http://localhost:${FRONT_PORT}（Vite 启动需 1-2 秒）"
-echo "演示前预热：node warmup.js http://127.0.0.1:${BACKEND_PORT}"
+echo "登录账号：admin/admin123 或 demo/demo123"
 echo "按 Ctrl+C 停止全部服务"
 echo ""
 
