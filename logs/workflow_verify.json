@@ -1,0 +1,162 @@
+[
+  {
+    "name": "登录",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "未认证访问被拦截(401)",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "触发(CHAT)",
+    "pass": true,
+    "detail": "id=12"
+  },
+  {
+    "name": "执行完成(CHAT)",
+    "pass": true,
+    "detail": "status=PENDING_CONFIRM intent=CHAT"
+  },
+  {
+    "name": "意图识别(CHAT)",
+    "pass": true,
+    "detail": "实际=CHAT"
+  },
+  {
+    "name": "节点轨迹(CHAT)",
+    "pass": true,
+    "detail": "classify → chat"
+  },
+  {
+    "name": "HTTP时间工具调用",
+    "pass": true,
+    "detail": "你好！我是公文工作流助手。当前服务器时间：2026年11月26日 16:13:13（经 HTTP 工具获取）。可以让我查"
+  },
+  {
+    "name": "未确认导出被拒(409)",
+    "pass": true,
+    "detail": "当前状态 PENDING_CONFIRM 不允许导出（需先人工确认 CONFIRMED）"
+  },
+  {
+    "name": "人工确认CONFIRM",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "导出Markdown",
+    "pass": true,
+    "detail": "263 bytes"
+  },
+  {
+    "name": "EXPORTED重复下载",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "触发(STATS)",
+    "pass": true,
+    "detail": "id=13"
+  },
+  {
+    "name": "执行完成(STATS)",
+    "pass": true,
+    "detail": "status=PENDING_CONFIRM intent=STATS"
+  },
+  {
+    "name": "意图识别(STATS)",
+    "pass": true,
+    "detail": "实际=STATS"
+  },
+  {
+    "name": "节点轨迹(STATS)",
+    "pass": true,
+    "detail": "classify → stats"
+  },
+  {
+    "name": "DB统计工具输出",
+    "pass": true,
+    "detail": "知识库统计结果（共 2 个库，22 份文档，260 个分块）：\n- 测试：文档 1 份（就绪 1，失败 0），分块 2\n"
+  },
+  {
+    "name": "人工驳回REJECT",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "驳回后重跑",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "重跑完成",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "重跑后确认",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "触发(QA)",
+    "pass": true,
+    "detail": "id=14"
+  },
+  {
+    "name": "执行完成(QA)",
+    "pass": true,
+    "detail": "status=PENDING_CONFIRM intent=QA"
+  },
+  {
+    "name": "意图识别(QA)",
+    "pass": true,
+    "detail": "实际=QA"
+  },
+  {
+    "name": "节点轨迹(QA)",
+    "pass": true,
+    "detail": "classify → retrieve → generate → formatCheck"
+  },
+  {
+    "name": "QA无答案拒答兜底",
+    "pass": true,
+    "detail": "知识库资料不足。现有资料主要涉及党政机关公文处理、行政规范性文件管理及合法性审核等内容，未涉及公司员工年假的审批流程 [1][2][3][4][5]。"
+  },
+  {
+    "name": "触发(DRAFT)",
+    "pass": true,
+    "detail": "id=15"
+  },
+  {
+    "name": "执行完成(DRAFT)",
+    "pass": true,
+    "detail": "status=PENDING_CONFIRM intent=DRAFT"
+  },
+  {
+    "name": "意图识别(DRAFT)",
+    "pass": true,
+    "detail": "实际=DRAFT"
+  },
+  {
+    "name": "节点轨迹(DRAFT)",
+    "pass": true,
+    "detail": "classify → retrieve → generate → formatCheck"
+  },
+  {
+    "name": "Skill格式校验报告",
+    "pass": true,
+    "detail": "score=100 passed=True"
+  },
+  {
+    "name": "DRAFT引用来源(文件名+段落)",
+    "pass": true,
+    "detail": "5 条"
+  },
+  {
+    "name": "DRAFT导出",
+    "pass": true,
+    "detail": ""
+  }
+]
